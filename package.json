@@ -1,0 +1,14 @@
+{
+  "name": "boo_cam",
+  "version": "1.0.0",
+  "description": "An JS + ML demo featuring Super Mario characters.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "face-api.js": "^0.18.0"
+  }
+}
