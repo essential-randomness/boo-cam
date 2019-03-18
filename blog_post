@@ -1,0 +1,45 @@
+STEP 1: Start with the Monkey
+
+- How hard would it be to get a frame from the webcam and run face recognition on it?
+- That's definitely easy if we send to the server, but can we do it client side?
+
+Make a small example where the background changes if a face is detected
+
+STEP2: Decide the background
+
+- I kinda wanted to automatically generate it, but it wasn't that good for a v0
+- Found a good image. Let's get the complex part done first.
+
+STEP3: the movements of the boos
+
+- Easy way of positioning them would be to just select a random place to put them in
+- If we move them randomly, how do we detect collisions?
+    - Easiest way is to do a n^2 comparison, which could be fine if we have not too many boos
+    - Probably should try and see performance, but why not use this chance to learn how to do this properly?
+    - Reading up about collisions in games, a good optimization technique is to divide the map
+     in quadrants and first calculate where every chara is and then do collisions only for 
+     those quadrants.
+        - This actually is a good idea for spawning too! Just random risks to put all 
+          the boos on the same area of the page, but if we keep track of the quadrants
+          then we can spawn in a quadrant that doesn't already have boos
+
+Step 3.1: make a boo spawn for each quadrant
+
+Step 3.2: move the boos
+- Easiest known way is to use setTimeout. Now I know this has problems, but I prototyped it with that.
+- RequestAnimationFrame is the right way of doing it. But how are we going to implement velocity this way?
+    - Concept of FPS
+- Note that at this point we aren't doing anything complex with the movements, just make the boos
+  move on their quadrant to see how it would work out
+
+STEP 4: put it together?
+- Try adding the webcam processing to it
+- Notice some lag. Admittedly it could be because my computer has been bugging me about having less than
+  10GB left for a while. Wooops, but also do it.
+- Maybe we should offset that to a webworker? Hey, it could be fun!
+        - What webworkers can do: processing
+        - What webworkers can't do: access the dom
+    - Because of what webworkers can't do the only step we can somewhat optimize
+      is the face recognition part. Is that what's actually causing the slowdown?
+        - JavaScript Profiling
+        - https://developer.mozilla.org/en-US/docs/Tools/Performance/Scenarios/Intensive_JavaScript

@@ -137,7 +137,7 @@ class Boo {
         this.currentQuadrant = quadrant;
     }
 
-    move() {
+    animateNextFrame() {
         let newX = parseInt(this.container.style.left) + (this.directionX * 1);
         let newY = parseInt(this.container.style.top) + (this.directionY * 1);
         // We need to check both newX and newX + the width of the boo
@@ -145,13 +145,13 @@ class Boo {
         if (!this.currentQuadrant.containsX(newX) ||
             !this.currentQuadrant.containsX(newX + this.width)) {
             this.directionX = this.directionX * -1;
-            this.move();
+            this.animateNextFrame();
             return;
         }
         if (!this.currentQuadrant.containsY(newY) ||
             !this.currentQuadrant.containsY(newY + this.height)) {
             this.directionY = this.directionY * -1;
-            this.move();
+            this.animateNextFrame();
             return;
         }
         this.container.style.top = newY + "px";
@@ -167,74 +167,96 @@ class Boo {
     }
 }
 
-startFaceDetect();
+class FrameManager {
+    constructor() {
+        // How many frames of animation are going to be shown
+        // for each second passing IRL.
+        const FPS = 60;
 
-let boos = [];
-let max = 95;
-let min = 5;
+        // How many milliseconds need to pass before a new frame
+        // is triggered.
+        this.millisecondsPerFrame = 1000 / FPS;
+        this.then = Date.now();
+        this.currentFrame = 0;
 
-let fps = 1 * 1000;
-let now = Date.now();
-let then = Date.now();
+        // All subscribers should have a "animateNextFrame" method.
+        this.subscribers = [];
 
-function maybeCreateBoo() {
-    if (freeQuadrants.length == 0) {
-        return;
+        requestAnimationFrame(this.maybeTriggerNextFrame.bind(this));
     }
-    now = Date.now();
-    elapsed = now - then;
-    if (elapsed < fps) {
-        requestAnimationFrame(maybeCreateBoo);
-        return;
+
+    addSubscriber(subscriber) {
+        // TODO: add checking that method exists
+        this.subscribers.push(subscriber);
     }
-    console.log("spawn!!");
-    then = now - (elapsed % fps);
-    // Decide a random free quadrant!
-    let quadrantIndex = getRandomInt(0, freeQuadrants.length - 1);
-    // Remove that quadrant from the index of free quadrants
-    // and add it to the busy ones
-    let quadrant = freeQuadrants[quadrantIndex];
-    freeQuadrants.splice(quadrantIndex, 1);
-    busyQuadrants.push(quadrant);
 
-    console.log(freeQuadrants);
-    console.log(busyQuadrants);
+    maybeTriggerNextFrame() {
+        let now = Date.now();
+        // Elapsed contains how many milliseconds have passed since the last
+        // time this method was called. 
+        let elapsed = this.then - now;
+        let framesToShow = Math.floor(elapsed / this.millisecondsPerFrame);
 
-    let margin = 50;
-    let x = getRandomInt(0, quadrant.width - margin);
-    let y = getRandomInt(0, quadrant.height - margin);
-    let newBoo = new Boo(`${quadrant.x + x}px`, `${quadrant.y + y}px`);
+        if (framesToShow > 1) {
+            console.log(`Computation took more than one frame (${framesToShow} frames).`);
+        }
 
-    quadrant.addBoo(newBoo);
-    newBoo.setCurrentQuadrant(quadrant);
-    boos.push(newBoo);
+        if (framesToShow) {
+            this.currentFrame++;
+            this.subscribers.forEach(subscriber => subscriber.animateNextFrame());
+        }
 
-    requestAnimationFrame(maybeCreateBoo);
+        // TODO: maybe only bind once
+        requestAnimationFrame(this.maybeTriggerNextFrame.bind(this));
+        
+    }
+
 }
 
-requestAnimationFrame(maybeCreateBoo);
+//startFaceDetect();
+
+class BoosManager {
+    constructor() {
+        this.MAX_BOOS = 5;
+        this.boos = [];
+        // Create a boo every 60 frames
+        this.BOO_RATE = 60;
+    }
+
+    animateNextFrame() {
+        if (FRAME_MANAGER.currentFrame % this.BOO_RATE == 0) {
+            this.maybeCreateBoo();
+        }
+    }
+
+    maybeCreateBoo() {
+        if (this.boos.length == this.MAX_BOOS) {
+            return;
+        }
+
+        // Decide a random free quadrant!
+        let quadrantIndex = getRandomInt(0, freeQuadrants.length - 1);
+        // Remove that quadrant from the index of free quadrants
+        // and add it to the busy ones
+        let quadrant = freeQuadrants[quadrantIndex];
+        freeQuadrants.splice(quadrantIndex, 1);
+        busyQuadrants.push(quadrant);
+
+        let margin = 50;
+        let x = getRandomInt(0, quadrant.width - margin);
+        let y = getRandomInt(0, quadrant.height - margin);
+        let newBoo = new Boo(`${quadrant.x + x}px`, `${quadrant.y + y}px`);
+
+        quadrant.addBoo(newBoo);
+        newBoo.setCurrentQuadrant(quadrant);
+        this.boos.push(newBoo);
+        FRAME_MANAGER.addSubscriber(newBoo);
+    }
+}
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-
-let boosFps = 1 * 3000;
-let boosNow = Date.now();
-let boosThen = Date.now();
-
-function moveBoos() {
-    boos.forEach(boo => boo.makeShy(stop));
-    if (stop) {
-        requestAnimationFrame(moveBoos);
-        return;
-    }
-    boosNow = Date.now();
-    if (boosNow - boosThen < boosFps) {
-        requestAnimationFrame(moveBoos);
-        return;
-    }
-    boos.forEach(boo => boo.move());
-    requestAnimationFrame(moveBoos);
-}
-requestAnimationFrame(moveBoos);
+const FRAME_MANAGER = new FrameManager();
+FRAME_MANAGER.addSubscriber(new BoosManager());
