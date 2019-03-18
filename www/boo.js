@@ -114,6 +114,7 @@ class Boo {
         this.container.style.top = y;
         this.container.style.left = x;
         this.container.style.position = "absolute";
+        this.container.style.transition = "opacity 2s";
 
         this.image = document.createElement("div");
         this.image.style.backgroundImage = "url('boo_awake.png')";
@@ -131,6 +132,11 @@ class Boo {
         this.height = 50;
 
         this.makeShy(stop);
+        this.dead = false;
+    }
+
+    getCurrentQuadrant() {
+        return this.currentQuadrant;
     }
 
     setCurrentQuadrant(quadrant) {
@@ -138,6 +144,14 @@ class Boo {
     }
 
     animateNextFrame() {
+        if (this.dead) {
+            if (this.container.style.opacity === "0") {
+                this.container.remove();
+                return;
+            }
+            let currentOpacity = getComputedStyle(this.container).opacity;
+            this.container.style.opacity = currentOpacity - 0.1;
+        }
         let newX = parseInt(this.container.style.left) + (this.directionX * 1);
         let newY = parseInt(this.container.style.top) + (this.directionY * 1);
         // We need to check both newX and newX + the width of the boo
@@ -164,6 +178,10 @@ class Boo {
 
     makeShy(shy) {
         this.image.style.backgroundImage = `url(${shy ? 'boo_shy.png' : 'boo_awake.png'})`;
+    }
+
+    startDisappear() {
+        this.dead = true;
     }
 }
 
@@ -219,18 +237,32 @@ class BoosManager {
     constructor() {
         this.MAX_BOOS = 5;
         this.boos = [];
-        // Create a boo every 60 frames
+        // Create a boo every 60 frames (i.e. 1 second)
         this.BOO_RATE = 60;
+        // Disappear a boo every half minute.
+        this.BOO_DISAPPEREANCE_RATE = 60 * 30;
     }
 
     animateNextFrame() {
         if (FRAME_MANAGER.currentFrame % this.BOO_RATE == 0) {
             this.maybeCreateBoo();
         }
+        if (FRAME_MANAGER.currentFrame % this.BOO_DISAPPEREANCE_RATE == 0) {
+            this.maybeDisappearBoo();
+        }
+    }
+
+    maybeDisappearBoo() {
+        if (this.boos.length === 0) {
+            return;
+        }
+        let boo = this.boos.pop();
+        boo.getCurrentQuadrant().removeBoo(boo);
+        boo.startDisappear();
     }
 
     maybeCreateBoo() {
-        if (this.boos.length == this.MAX_BOOS) {
+        if (this.boos.length === this.MAX_BOOS) {
             return;
         }
 
